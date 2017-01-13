@@ -1,22 +1,54 @@
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
 import {
     Animated,
     TouchableWithoutFeedback,
-    Text,
-    View
 } from 'react-native';
 
 export default class Hamburger extends Component {
 
-    constructor(props) {
-        super(props);
-        this.state = {
-            active: false
-        }
-    }
+    static propTypes = {
+        /**
+         * Type of hamburger icon and animation. Supports cross, spinCross, arrow or spinArrow values
+         */
+        type: PropTypes.oneOf(['cross', 'spinCross', 'arrow', 'spinArrow']),
+
+        /**
+         * Active state meaning the icon will transform from hamburger to cross or arrow.
+         * This is exported for use with shared state as redux or navigation state.
+         */
+        active: PropTypes.bool,
+
+        /**
+         * Touchable onPress callback.
+         */
+        onPress: PropTypes.func,
+
+        /**
+         * Style properties
+         */
+        color: PropTypes.string,
+        lineWidth: PropTypes.number,
+
+        /**
+         * Spring animation custom properties
+         */
+        speed: PropTypes.number,
+        tension: PropTypes.number,
+        friction: PropTypes.number,
+
+        /**
+         * Timing animation custom properties
+         */
+        middleBarFadeDuration: PropTypes.number,
+    };
+
+    static defaultProps = {
+        lineWidth: 3,
+        middleBarFadeDuration: 600,
+    };
 
     spinCross() {
-        if (!this.state.active) {
+        if (this.props.active) {
             Animated.spring(this.containerAnim, {
                 toValue: 1
             }).start();
@@ -34,9 +66,6 @@ export default class Hamburger extends Component {
                 duration: 30
             }).start();
         } else {
-            this.setState({
-                active: false
-            });
             Animated.spring(this.containerAnim, {
                 toValue: 0
             }).start();
@@ -57,43 +86,49 @@ export default class Hamburger extends Component {
     }
 
     cross() {
-        if (!this.state.active) {
+        const { speed, tension, friction, middleBarFadeDuration, lineWidth } = this.props;
+        const springConfig = { speed, tension, friction };
+
+        if (this.props.active) {
             Animated.spring(this.topBar, {
-                toValue: .9
+                toValue: .9,
+                ...springConfig,
             }).start();
             Animated.spring(this.bottomBar, {
-                toValue: .9
+                toValue: .9,
+                ...springConfig,
             }).start();
             Animated.spring(this.bottomBarMargin, {
-                toValue: -10
+                toValue: -10 + (3 - lineWidth),
+                ...springConfig,
             }).start();
             Animated.timing(this.middleBarOpacity, {
                 toValue: 0,
                 duration: 30
             }).start();
         } else {
-            this.setState({
-                active: false
-            });
             Animated.spring(this.topBar, {
-                toValue: 0
+                toValue: 0,
+                ...springConfig,
             }).start();
             Animated.spring(this.bottomBar, {
-                toValue: 0
+                toValue: 0,
+                ...springConfig,
             }).start();
             Animated.spring(this.bottomBarMargin, {
-                toValue: 4
+                toValue: 4 + (3 - lineWidth),
+                ...springConfig,
             }).start();
-            Animated.spring(this.middleBarOpacity, {
+            Animated.timing(this.middleBarOpacity, {
                 toValue: 1,
-                duration: 1200
+                duration: middleBarFadeDuration
             }).start();
         }
     }
 
 
     spinArrow() {
-        if (!this.state.active) {
+        if (this.props.active) {
             Animated.spring(this.containerAnim, {
                 toValue: 1
             }).start();
@@ -141,7 +176,7 @@ export default class Hamburger extends Component {
     }
 
     arrow() {
-        if (!this.state.active) {
+        if (this.props.active) {
             Animated.spring(this.topBar, {
                 toValue: 1
             }).start();
@@ -161,9 +196,6 @@ export default class Hamburger extends Component {
                 toValue: -2
             }).start();
         } else {
-            this.setState({
-                active: false
-            });
             Animated.spring(this.topBar, {
                 toValue: 0
             }).start();
@@ -185,33 +217,19 @@ export default class Hamburger extends Component {
         }
     }
 
-
     _animate() {
-        setTimeout(()=> {
-            this.setState({
-                active: this.props.active
-            });
-        }, 0);
         const { props: { type } } = this;
         type=="spinArrow" ? this.spinArrow() :
         type=="arrow" ? this.arrow() :
         type=="spinCross" ? this.spinCross() :
         this.cross();
-
-
     }
-    componentDidMount() {
-        setTimeout(()=> {
-            this.setState({
-                active: this.props.active
-            });
-        }, 0);
-    }
+
     render() {
 
-        const { props: { color, type } } = this;
+        const { props: { color, type, lineWidth, active } } = this;
 
-        if (this.props.active) {
+        if (active) {
             if (type=="spinArrow") {
                 this.containerAnim = this.containerAnim || new Animated.Value(1);
                 this.topBar = this.topBar || new Animated.Value(1);
@@ -248,14 +266,16 @@ export default class Hamburger extends Component {
         this.topBar = this.topBar || new Animated.Value(0);
         this.bottomBar = this.bottomBar || new Animated.Value(0);
         this.middleBarOpacity = this.middleBarOpacity || new Animated.Value(1);
-        this.bottomBarMargin = this.bottomBarMargin || new Animated.Value(4);
+        this.bottomBarMargin = this.bottomBarMargin || new Animated.Value(4 + (3 - lineWidth));
         this.topBarMargin = this.topBarMargin || new Animated.Value(0);
         this.marginLeft = this.marginLeft || new Animated.Value(0);
         this.width = this.width || new Animated.Value(25);
 
+        this._animate();
+
         return (
             <TouchableWithoutFeedback
-                onPress={()=> {this.props.onPress ? this.props.onPress() : undefined, this._animate()}}>
+                onPress={()=> {this.props.onPress ? this.props.onPress() : undefined}}>
                 <Animated.View style={{
                     width: 35,
                     justifyContent: 'center',
@@ -271,7 +291,7 @@ export default class Hamburger extends Component {
                     ]
                     }}>
                     <Animated.View style={{
-                        height: 3,
+                        height: lineWidth,
                         marginLeft: this.marginLeft,
                         width: this.width,
                         marginBottom: this.topBarMargin,
@@ -286,13 +306,13 @@ export default class Hamburger extends Component {
                         ]
                     }} />
                     <Animated.View style={{
-                        height: 3,
+                        height: lineWidth,
                         width: 25,
                         opacity:this.middleBarOpacity,
                         backgroundColor: color ? color : 'black',
-                        marginTop: 4}} />
+                        marginTop: 4 + (3 - lineWidth)}} />
                     <Animated.View style={{
-                        height: 3,
+                        height: lineWidth,
                         marginLeft: this.marginLeft,
                         width: this.width,
                         backgroundColor: color ? color : 'black',
