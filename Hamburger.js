@@ -225,6 +225,10 @@ export default class Hamburger extends Component {
         this.cross();
     }
 
+    componentDidUpdate() {
+        this._animate();
+    }
+
     render() {
 
         const { props: { color, type, lineWidth, active } } = this;
@@ -270,8 +274,6 @@ export default class Hamburger extends Component {
         this.topBarMargin = this.topBarMargin || new Animated.Value(0);
         this.marginLeft = this.marginLeft || new Animated.Value(0);
         this.width = this.width || new Animated.Value(25);
-
-        this._animate();
 
         return (
             <TouchableWithoutFeedback
